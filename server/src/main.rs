@@ -10,7 +10,10 @@ fn handle_client(mut stream:TcpStream)->io::Result<()>{
         if bytes_read == 0{
            return Ok(());     
         }
-        stream.write(&buf[..bytes_read]);
+        match stream.write(&buf[..bytes_read]){
+            Ok(_) =>{return Ok(());},
+            Err(e) => println!("error:{}",e)
+        }
     }
 }
 
@@ -19,14 +22,23 @@ fn main()->io::Result<()> {
     let mut thread_vec:Vec<thread::JoinHandle<()>> = Vec::new();  //创建一个线程池
     //通过for 循环监听连接
     for stream in listenr.incoming(){
-        let stream = stream.expect("fail");
-        //把连接过来的请求放入线程异步处理
-        let handle = thread::spawn(move || {
-            //连接处理
-            handle_client(stream).unwrap_or_else(|err|eprintln!("{:?}",err));
-        });
-        //把线程放到 vec
-        thread_vec.push(handle);
+
+        match stream {
+            Ok(stream) => {
+                //把连接过来的请求放入线程异步处理
+                let handle = thread::spawn(move || {
+                    //连接处理
+                    handle_client(stream).unwrap_or_else(|err|eprintln!("{:?}",err));
+                });
+                //把线程放到 vec
+                thread_vec.push(handle);
+            }
+            Err(e) => {
+                /* connection failed */
+                println!("connection failed:{:?}",e);
+                continue;
+            }
+        }
     }
     //等待每个线程都结束
     for handle in thread_vec{

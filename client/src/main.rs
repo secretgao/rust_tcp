@@ -14,5 +14,4 @@ fn main()->io::Result<()> {
         reader.read_until(b'\n',&mut buffer).expect("读取失败");
         println!("read from server :{}",str::from_utf8(&mut buffer).unwrap());
     }
-    Ok(())
 }
